@@ -1,0 +1,10 @@
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\bin\Debug\Burrows-WhellerTransform.exe.config
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\bin\Debug\Burrows-WhellerTransform.exe
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\bin\Debug\Burrows-WhellerTransform.pdb
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\obj\Debug\Burrows-WhellerTransform.csprojAssemblyReference.cache
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\obj\Debug\Burrows_WhellerTransform.Form1.resources
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\obj\Debug\Burrows_WhellerTransform.Properties.Resources.resources
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\obj\Debug\Burrows-WhellerTransform.csproj.GenerateResource.cache
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\obj\Debug\Burrows-WhellerTransform.csproj.CoreCompileInputs.cache
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\obj\Debug\Burrows-WhellerTransform.exe
+G:\Xamarin\Burrows-WhellerTransform\Burrows-WhellerTransform\obj\Debug\Burrows-WhellerTransform.pdb

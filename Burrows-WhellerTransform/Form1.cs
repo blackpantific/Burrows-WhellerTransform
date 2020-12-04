@@ -14,6 +14,10 @@ namespace Burrows_WhellerTransform
     public partial class Form1 : Form
     {
         public OpenFileDialog openFileDialog1 { get; set; } = new OpenFileDialog();
+        public static List<byte> Alphabet { get; set; } = new List<byte>();
+        public static List<double> AlphabetPropabilities { get; set; } = new List<double>();
+        public static List<byte> AlphabetSorted { get; set; } = new List<byte>();
+        public static List<byte> ListToConvertByHuffman { get; set; } = new List<byte>();
 
         public Form1()
         {
@@ -45,13 +49,15 @@ namespace Burrows_WhellerTransform
             propabilities.Add(0.06);
             propabilities.Add(0.05);
 
-            var res = BurrowsWhellerCompressDataBlock(listByte);
-            BurrowsWhellerDecompressDataBlock(res);
+            //var res = BurrowsWhellerCompressDataBlock(listByte);
+            //BurrowsWhellerDecompressDataBlock(res);
 
-            var list = MoveToFrontCompressAllData(listByte, alphabet);
-            MoveToFrontDecompressAllData(list, alphabet);
+            //var list = MoveToFrontCompressAllData(listByte, alphabet);
+            //MoveToFrontDecompressAllData(list, alphabet);
 
-            HuffmanCodeBuilder(propabilities);
+            //HuffmanCodeBuilder(propabilities);
+
+            
 
             /////////////////////////////////////////////////////////////////////
             //var index = Alphabet.IndexOf(21);                                     можно проверять наличие буквы в алфавите
@@ -69,17 +75,111 @@ namespace Burrows_WhellerTransform
                 return;
 
             string filename = openFileDialog1.FileName;
+            FileStream fileStream;
 
-            //using (var fileStream = File.OpenRead(filename))
-            //{
-            //}
+            using (fileStream = File.OpenRead(filename))
+            {
+                //Alphabet.Add(5);
+                //Alphabet.Add(48);
+                //Alphabet.Add(49);
+                //Alphabet.Add(50);
+                //Alphabet.Add(51);
+                //Alphabet.Add(52);
+                //Alphabet.Add(53);
+                //Alphabet.Add(54);
+                //Alphabet.Add(55);
+                //Alphabet.Add(56);
+                //Alphabet.Add(57);
+
+                var a = BurrowsWhellerTransformAllData(fileStream);
+
+                var b = MoveToFrontCompressAllData(a, GettingSortedAlphabet(a));
+
+                var numSymbolsInAlphabet = AlphabetSorted.Count;
+
+                
+
+                //var c = MoveToFrontDecompressAllData(b, AlphabetSorted);
+
+                //ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО!!!
+
+                //ToInt32(Byte[], Int32)                           //////////////////////////////////////////////////////////
+                //uint a = BitConverter.ToUInt32(BitConverter.GetBytes(numberOfBlocks), 0);
+            }
 
 
 
         }
 
-        public static void BurrowsWhellerTransformAllData(byte[] byteArray, int blockSize)//blockSize - n-word
+        public static List<byte> BurrowsWhellerTransformAllData(Stream fileStream, int blockSize = 250)//blockSize - n-word
         {
+            var numerator = 0;
+            var fileSize = fileStream.Length;
+            byte[] buffer = new byte[fileSize];
+            List<byte> DataToBurrowsWhellerCompress = new List<byte>();//??
+            List<byte> BufferAsList;
+            uint numberOfBlocks = 0;
+
+            /////////////////СОЗДАТЬ АЛФАВИТ ДЛЯ КОДА ХАФФМАНА
+
+            fileStream.Read(buffer, 0, Convert.ToInt32(fileSize));
+            BufferAsList = new List<byte>(buffer);
+
+            while (numerator != -1)
+            {
+                if (numerator + blockSize <= fileSize)
+                {
+                    var sublist = BufferAsList.GetRange(numerator, blockSize);
+                    DataToBurrowsWhellerCompress.AddRange(BurrowsWhellerCompressDataBlock(sublist));
+
+                    //var a = BurrowsWhellerDecompressDataBlock(BurrowsWhellerCompressDataBlock(sublist));
+
+                    numerator += blockSize;
+                    numberOfBlocks += 1;//кол-во блоков до 4294967295, 4 байта
+                }
+                else
+                {
+                    var sublist = BufferAsList.GetRange(numerator, Convert.ToInt32(fileSize % blockSize));
+                    if (sublist.Count != 0)
+                    {
+                        DataToBurrowsWhellerCompress.AddRange(BurrowsWhellerCompressDataBlock(sublist));
+
+                        //var a = BurrowsWhellerDecompressDataBlock(BurrowsWhellerCompressDataBlock(sublist));
+
+                        numberOfBlocks += 1;
+                    }
+                    break;
+                }
+            }
+
+            DataToBurrowsWhellerCompress.InsertRange(0, BitConverter.GetBytes(numberOfBlocks));//вставляем на 0 позицию 4 бита, те кол-во слов
+
+            return DataToBurrowsWhellerCompress;
+        }
+
+        public static List<byte> BurrowsWhellesDecompressAllData(List<byte> byteArray)
+        {
+            var numerator = 4;//первые 4 байта под количество блоков отведены
+            var listSize = byteArray.Count;
+            List<byte> DataToWriteToFile = new List<byte>();
+            var numberOfBlocks = BitConverter.ToUInt32(byteArray.GetRange(0, 4).ToArray(), 0);
+
+            for (int i = 0; i < numberOfBlocks; i++)
+            {
+                if(i + 1 != numberOfBlocks)
+                {
+                    var subset = byteArray.GetRange(numerator, 251);//251 или 6
+                    DataToWriteToFile.AddRange(BurrowsWhellerDecompressDataBlock(subset));
+                    numerator += 251;
+                }
+                else
+                {
+                    var subset = byteArray.GetRange(numerator, listSize - numerator);
+                    DataToWriteToFile.AddRange(BurrowsWhellerDecompressDataBlock(subset));
+                }
+            }
+
+            return DataToWriteToFile;
 
         }
 
@@ -159,11 +259,6 @@ namespace Burrows_WhellerTransform
 
             }
 
-        }
-
-        public static bool GetDouble(double number)
-        {
-            return number > 0;
         }
 
         public static List<byte> MoveToFrontCompressAllData(List<byte> byteArray, List<byte> alphabet)//block size - all word, алфавит уже упорядоченный
@@ -269,5 +364,25 @@ namespace Burrows_WhellerTransform
 
             return ResultMatrix[positionOfByteArrayInMatrix - 1];
         }
+
+        public static List<byte> GettingSortedAlphabet(List<byte> byteArray)
+        {
+            for (int i = 0; i < byteArray.Count; i++)
+            {
+                if (AlphabetSorted.Contains(byteArray[i]))
+                {
+                    continue;
+                }
+                else
+                {
+                    AlphabetSorted.Add(byteArray[i]);
+                }
+            }
+
+            AlphabetSorted = AlphabetSorted.OrderBy(i =>i).ToList();
+            return AlphabetSorted;
+        }
+
+
     }
 }

@@ -16,6 +16,7 @@ namespace Burrows_WhellerTransform
         public OpenFileDialog openFileDialog1 { get; set; } = new OpenFileDialog();
         public static List<byte> Alphabet { get; set; } = new List<byte>();
         public static List<double> AlphabetPropabilities { get; set; } = new List<double>();
+        public static Dictionary<byte, double> AlphabetAndPropabilities { get; set; } = new Dictionary<byte, double>();
         public static List<byte> AlphabetSorted { get; set; } = new List<byte>();
         public static List<byte> ListToConvertByHuffman { get; set; } = new List<byte>();
 
@@ -95,11 +96,20 @@ namespace Burrows_WhellerTransform
 
                 var b = MoveToFrontCompressAllData(a, GettingSortedAlphabet(a));
 
-                var numSymbolsInAlphabet = AlphabetSorted.Count;
-
                 
 
-                //var c = MoveToFrontDecompressAllData(b, AlphabetSorted);
+                b.InsertRange(0, BitConverter.GetBytes(AlphabetSorted.Count));//вставляем в начало размер алфавита
+
+                b.InsertRange(4, AlphabetSorted);//Текст после Барроуза-Уиллера и стопки книг
+
+                GettingAlphabetAndPropabilities(b, Alphabet, AlphabetPropabilities);
+
+                HuffmanCodeBuilder(AlphabetPropabilities);
+                
+                //var al = Alphabet;
+                //var ab = AlphabetPropabilities;
+
+                //var c = MoveToFrontDecompressAllData(b);
 
                 //ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО!!!
 
@@ -185,9 +195,9 @@ namespace Burrows_WhellerTransform
 
         public static void HuffmanCodeBuilder(List<double> sortedProbabilities)//получает отсорт вер-ти и выдает готовые коды на каждый символ
         {
-            List<double> P = new List<double>(sortedProbabilities);
-            List<List<byte>> T = new List<List<byte>>();
-            List<List<byte>> C = new List<List<byte>>();
+            List<double> P = new List<double>(sortedProbabilities);//вероятности
+            List<List<byte>> T = new List<List<byte>>();//потомки узлов
+            List<List<byte>> C = new List<List<byte>>();//кодовые слова
 
             for (int i = 0; i < P.Count; i++)
             {
@@ -282,10 +292,20 @@ namespace Burrows_WhellerTransform
             return OutputList;
         }
 
-        public static List<byte> MoveToFrontDecompressAllData(List<byte> byteArray, List<byte> alphabet)//block size - all word, слово с уже отделенным алфавитом
+        public static List<byte> MoveToFrontDecompressAllData(List<byte> byteArray)//block size - all word, слово с уже отделенным алфавитом
         {
+            var numberOfSymbolsAlphabet = BitConverter.ToInt32(byteArray.GetRange(0, 4).ToArray(), 0);
             List<byte> OutputList = new List<byte>();
-            List<byte> Alphabet = new List<byte>(alphabet);
+            List<byte> Alphabet = new List<byte>();
+
+            Alphabet.AddRange(byteArray.GetRange(4, numberOfSymbolsAlphabet));
+
+            //for (int i = 4; i < numberOfSymbolsAlphabet + 4; i++)//заменить на GetRange
+            //{
+            //    Alphabet.Add(byteArray[i]);
+            //}
+            byteArray.RemoveRange(0, 4 + Alphabet.Count);
+
             for (int i = 0; i < byteArray.Count; i++)//цикл по входному списку
             {
                 for (int j = 0; j < Alphabet.Count; j++)//цикл по алфавиту
@@ -383,6 +403,31 @@ namespace Burrows_WhellerTransform
             return AlphabetSorted;
         }
 
+        public static void GettingAlphabetAndPropabilities(List<byte> byteArray, List<byte> Alphabet, List<double> AlphabetPropabilities)
+        {
+            var numberOfSymbolsInArray = byteArray.Count;
+            double countSymbols;//сколько раз встречается тот или иной элемент
+            double propability;
+            for (int i = 0; i < numberOfSymbolsInArray; i++)
+            {
+                //string occur = "Test1";
+                //IList<String> words = new List<string>() { "Test1", "Test2", "Test3", "Test1" };
+                if (Alphabet.Contains(byteArray[i]))
+                {
+                    continue;
+                }
+                else
+                {
+                    Alphabet.Add(byteArray[i]);
+                    countSymbols = byteArray.Where(x => x.Equals(byteArray[i])).Count();
+                    propability = countSymbols / numberOfSymbolsInArray;
+                    AlphabetPropabilities.Add(propability);
+                }
+            }
 
+
+            //var count = AlphabetPropabilities.Sum(x => x);
+
+        }
     }
 }

@@ -30,46 +30,10 @@ namespace Burrows_WhellerTransform
         {
             InitializeComponent();
 
-            button1.Click += button1_Click;
+
             openFileDialog1.Filter = "All files(*.*)|*.*";
             SaveFileDialog.Filter = "Text files(*.txt)|*.txt|All files(*.*)|*.*";
 
-            List<byte> listByte = new List<byte>();
-            listByte.Add(14);
-            listByte.Add(9);
-            listByte.Add(5);
-            listByte.Add(21);
-            listByte.Add(32);
-
-            List<byte> alphabet = new List<byte>();
-            alphabet.Add(5);
-            alphabet.Add(9);
-            alphabet.Add(14);
-            alphabet.Add(21);
-            alphabet.Add(32);
-
-            List<double> propabilities = new List<double>();
-            propabilities.Add(0.4);
-            propabilities.Add(0.25);
-            propabilities.Add(0.08);
-            propabilities.Add(0.07);
-            propabilities.Add(0.09);
-            propabilities.Add(0.06);
-            propabilities.Add(0.05);
-
-            //var res = BurrowsWhellerCompressDataBlock(listByte);
-            //BurrowsWhellerDecompressDataBlock(res);
-
-            //var list = MoveToFrontCompressAllData(listByte, alphabet);
-            //MoveToFrontDecompressAllData(list, alphabet);
-
-            //HuffmanCodeBuilder(propabilities);
-
-
-
-            /////////////////////////////////////////////////////////////////////
-            //var index = Alphabet.IndexOf(21);                                     можно проверять наличие буквы в алфавите
-            /////////////////////////////////////////////////////////////////////
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -80,105 +44,172 @@ namespace Burrows_WhellerTransform
         private void button1_Click(object sender, EventArgs e)
         {
             if (openFileDialog1.ShowDialog() == DialogResult.Cancel)
+            {
                 return;
-
-            string filename = openFileDialog1.FileName;
-            FileStream fileStream;
-
-            List<byte> textAfterBurrowsWheller;
-            FileInfo fileInfo;
-
-            using (fileStream = File.OpenRead(filename))
-            {
-                //Alphabet.Add(5);
-                //Alphabet.Add(48);
-                //Alphabet.Add(49);
-                //Alphabet.Add(50);
-                //Alphabet.Add(51);
-                //Alphabet.Add(52);
-                //Alphabet.Add(53);
-                //Alphabet.Add(54);
-                //Alphabet.Add(55);
-                //Alphabet.Add(56);
-                //Alphabet.Add(57);
-                fileInfo = new FileInfo(filename);
-                textAfterBurrowsWheller = BurrowsWhellerTransformAllData(fileStream);
             }
-            var textAfterMoveToFront = MoveToFrontCompressAllData(textAfterBurrowsWheller, GettingSortedAlphabet(textAfterBurrowsWheller));
-
-            textAfterMoveToFront.InsertRange(0, BitConverter.GetBytes(AlphabetSorted.Count));//вставляем в начало размер алфавита
-
-            textAfterMoveToFront.InsertRange(4, AlphabetSorted);//вставляем алфавит после количества символов в алфавите
-
-            GettingAlphabetAndPropabilities(textAfterMoveToFront);//получаем упорядоченный алфавит в соответствии с вероятностями итогового сбщ и вероятности букв
-
-            SortedPropabilities = AlphabetAndPropabilities.Select(d => d.Value).ToList();//сортируем вероятности для построения кода Хаффмана
-            AlphabetLettersSortedByPropabilities = AlphabetAndPropabilities.Select(l => l.Key).ToList();
-
-
-            HuffmanCodeBuilder(SortedPropabilities);//передаем список сортированых вероятностей из словаря
-
-            //ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО!!!
-
-            //Есть предположение, что объединение минимальных вероятностей при построении слов должно происходить с конца матрицы
-            //независимо от того сколько одинаковых минимальных вероятностей будет всего
-
-            //КОДИРОВАНИЕ ТЕКСТА
-            var InformationAboutText = new List<byte>();//вся инфа об кодах Хаффмана для декодера
-            InformationAboutText.Add((byte)AlphabetAndPropabilities.Count);//количество символов в алфавите
-            InformationAboutText.InsertRange(1, BitConverter.GetBytes(textAfterMoveToFront.Count));//кол-во символов в тексте
-
-            var alphabetLetters = AlphabetAndPropabilities.Select(d => d.Key).ToList();
-            InformationAboutText.InsertRange(5, alphabetLetters);//передаем алфавит в последовательносте убывания вероятностей каждой буквы
-
-            InformationAboutText.InsertRange(5 + alphabetLetters.Count, L);//вставляем длины каждого слова Хаффмана к каждой букве
-
-            List<byte> ListOfAllHuffmanWords = new List<byte>();//Все слова Хаффмана по убыванию вероятностей в списке
-            for (int i = 0; i < C.Count; i++)
+            else
             {
-                ListOfAllHuffmanWords.AddRange(C[i]);
+                string filename = openFileDialog1.FileName;
+                FileStream fileStream;
+
+                List<byte> textAfterBurrowsWheller;
+                FileInfo fileInfo;
+
+                using (fileStream = File.OpenRead(filename))
+                {
+                    fileInfo = new FileInfo(filename);
+                    textAfterBurrowsWheller = BurrowsWhellerTransformAllData(fileStream);
+                }
+                var textAfterMoveToFront = MoveToFrontCompressAllData(textAfterBurrowsWheller, GettingSortedAlphabet(textAfterBurrowsWheller));
+
+                textAfterMoveToFront.InsertRange(0, BitConverter.GetBytes(AlphabetSorted.Count));//вставляем в начало размер алфавита
+
+                textAfterMoveToFront.InsertRange(4, AlphabetSorted);//вставляем алфавит после количества символов в алфавите
+
+                GettingAlphabetAndPropabilities(textAfterMoveToFront);//получаем упорядоченный алфавит в соответствии с вероятностями итогового сбщ и вероятности букв
+
+                SortedPropabilities = AlphabetAndPropabilities.Select(d => d.Value).ToList();//сортируем вероятности для построения кода Хаффмана
+                AlphabetLettersSortedByPropabilities = AlphabetAndPropabilities.Select(l => l.Key).ToList();
+
+
+                HuffmanCodeBuilder(SortedPropabilities);//передаем список сортированых вероятностей из словаря
+
+                //ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО!!!
+
+                //Есть предположение, что объединение минимальных вероятностей при построении слов должно происходить с конца матрицы
+                //независимо от того сколько одинаковых минимальных вероятностей будет всего
+
+                //КОДИРОВАНИЕ ТЕКСТА
+                var InformationAboutText = new List<byte>();//вся инфа об кодах Хаффмана для декодера
+                InformationAboutText.Add((byte)AlphabetAndPropabilities.Count);//количество символов в алфавите
+                InformationAboutText.InsertRange(1, BitConverter.GetBytes(textAfterMoveToFront.Count));//кол-во символов в тексте
+
+                var alphabetLetters = AlphabetAndPropabilities.Select(d => d.Key).ToList();
+                InformationAboutText.InsertRange(5, alphabetLetters);//передаем алфавит в последовательносте убывания вероятностей каждой буквы
+
+                InformationAboutText.InsertRange(5 + alphabetLetters.Count, L);//вставляем длины каждого слова Хаффмана к каждой букве
+
+                List<byte> ListOfAllHuffmanWords = new List<byte>();//Все слова Хаффмана по убыванию вероятностей в списке
+                for (int i = 0; i < C.Count; i++)
+                {
+                    ListOfAllHuffmanWords.AddRange(C[i]);
+                }
+
+                var codeText = HuffmanTextCoder(textAfterMoveToFront);//
+
+                ListOfAllHuffmanWords.AddRange(codeText);//склеиваем кодовые слова и текст из кодовых слов
+
+                var wordsArrayAfterConvertion = ListOfAllHuffmanWords.ToBitArray(ListOfAllHuffmanWords.Count);
+                var byteArrayWords = wordsArrayAfterConvertion.BitArrayToByteArray();//переработанный массив из слов алфавита и текста
+                                                                                     //var listArrayOfDecodedArray = byteArrayWords.ByteArrayToBitList();
+
+                InformationAboutText.AddRange(byteArrayWords);//полный текст на запись в файл
+
+                using (FileStream fs = File.Create(fileInfo.DirectoryName + "\\" + $"{Path.GetFileNameWithoutExtension(fileInfo.Name)}" + ".bwc"))
+                {
+                    fs.Write(InformationAboutText.ToArray(), 0, InformationAboutText.Count);
+                }
             }
-
-            var codeText = HuffmanTextCoder(textAfterMoveToFront);//
-
-            ListOfAllHuffmanWords.AddRange(codeText);//склеиваем кодовые слова и текст из кодовых слов
-
-
-
-            List<byte> listB = new List<byte>();
-            listB.Add(1);
-            listB.Add(0);
-            listB.Add(1);
-            listB.Add(1);
-            listB.Add(1);
-            listB.Add(1);
-            listB.Add(1);
-            listB.Add(1);
-
-
-            var ba = listB.ToBitArray(listB.Count);
-            var byteA = ba.BitArrayToByteArray();
-            var listA = byteA.ByteArrayToBitList();
-
-            var wordsArrayAfterConvertion = ListOfAllHuffmanWords.ToBitArray(ListOfAllHuffmanWords.Count);
-            var byteArrayWords = wordsArrayAfterConvertion.BitArrayToByteArray();//переработанный массив из слов алфавита и текста
-                                                                                 //var listArrayOfDecodedArray = byteArrayWords.ByteArrayToBitList();
-
-            InformationAboutText.AddRange(byteArrayWords);//полный текст на запись в файл
-
-            using (FileStream fs = File.Create(fileInfo.DirectoryName + "\\" + $"{Path.GetFileNameWithoutExtension(fileInfo.Name)}" + "1" + ".txt"))
-            {
-                fs.Write(InformationAboutText.ToArray(), 0, InformationAboutText.Count);
-            }
-            
-
-
 
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
+            if (openFileDialog1.ShowDialog() == DialogResult.Cancel)
+            {
+                return;
+            }
+            else
+            {
+                List<byte> OutputFileList = new List<byte>();//текст из сжатого файла
+                string filename = openFileDialog1.FileName;
+                FileStream fileStream;
+                List<byte> HuffmanWordsWithData;
+                List<byte> HuffmanDataInBitsList;
+                FileInfo fileInfo;
 
+                using (fileStream = File.OpenRead(filename))
+                {
+                    var fileSize = fileStream.Length;
+                    byte[] buffer = new byte[fileSize];
+
+                    fileInfo = new FileInfo(filename);
+                    fileStream.Read(buffer, 0, Convert.ToInt32(fileSize));
+                    OutputFileList = new List<byte>(buffer);
+
+                }
+
+                var alphabetSize = OutputFileList[0];//размер алфавита
+                var userTextLenght = BitConverter.ToInt32(OutputFileList.GetRange(1, 4).ToArray(), 0);//количество букв в тексте
+                AlphabetLettersSortedByPropabilities = new List<byte>(OutputFileList.GetRange(5, alphabetSize));//получаем алфавит в упорядоченном виде(по убыв вероятностей)
+                L = new List<byte>(OutputFileList.GetRange((5 + alphabetSize), alphabetSize));//считываем длины код слов
+                var header = alphabetSize * 2 + 5;//размер заголовка
+
+                HuffmanWordsWithData = OutputFileList.GetRange(header, OutputFileList.Count - header);
+                HuffmanDataInBitsList = HuffmanWordsWithData.ByteListToBitList();
+
+                var textToDecode = GettingHuffmanWordsFromData(HuffmanDataInBitsList, alphabetSize, L);//кодовые слова вставляет в матрицу код слов, возвращает только текст для декодирования без алфавита в начале
+
+                var textToMoveToFront = GettingDataFromHuffmanWords(textToDecode, userTextLenght);
+
+                var textToBurrowsWheller = MoveToFrontDecompressAllData(textToMoveToFront);
+
+                var textToWriteToFile = BurrowsWhellesDecompressAllData(textToBurrowsWheller);
+
+                using (FileStream fs = File.Create(fileInfo.DirectoryName + "\\" + $"{Path.GetFileNameWithoutExtension(fileInfo.Name)}"))
+                {
+                    fs.Write(textToWriteToFile.ToArray(), 0, textToWriteToFile.Count);
+                }
+
+            }
+
+        }
+
+        public static List<byte> GettingDataFromHuffmanWords(List<byte> byteArray, int numberOfWords)
+        {
+            List<byte> ListToMoveToFront = new List<byte>();
+            int iterator = 0;
+
+            List<byte> newWord = new List<byte>();
+            for (int i = 0; i < byteArray.Count; i++)
+            {
+                if (iterator != numberOfWords)
+                {
+                    newWord.Add(byteArray[i]);
+                    for (int j = 0; j < C.Count; j++)
+                    {
+                        if (newWord.SequenceEqual(C[j]))
+                        {
+                            ListToMoveToFront.Add(AlphabetLettersSortedByPropabilities[j]);
+                            iterator += 1;
+                            newWord.Clear();
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    break;
+                }
+
+            }
+
+            return ListToMoveToFront;
+        }
+
+        public static List<byte> GettingHuffmanWordsFromData(List<byte> byteArray, int alphabetSize, List<byte> LenghtOfWords)
+        {
+            int index = 0;
+            C = new List<List<byte>>();
+            for (int i = 0; i < alphabetSize; i++)
+            {
+                C.Add(new List<byte>());
+                C[i].AddRange(byteArray.GetRange(index, LenghtOfWords[i]));
+                index += LenghtOfWords[i];
+            }
+
+            byteArray.RemoveRange(0, index);
+            return byteArray;
         }
 
         public static List<byte> HuffmanTextCoder(List<byte> byteArray)//преобразует польз текст в текст Хаффмана

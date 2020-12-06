@@ -61,6 +61,20 @@ namespace Burrows_WhellerTransform
             }
             return ret;
         }
+        public static List<byte> ByteListToBitList(this List<byte> byteArray/*, int bitCount*/)
+        {
+            List<byte> ret = new List<byte>();
+            //var comp = bitCount * 8;
+            //BitArray ba = new BitArray(comp);
+            for (int i = 0; i < byteArray.Count; i++)
+            {
+                var byteToString = Convert.ToString(byteArray[i], 2).PadLeft(8, '0').ToCharArray().Reverse().ToArray();//
+                var reverse = byteToString.Select(x => byte.Parse(x.ToString())).ToList();
+                ret.AddRange(reverse);
+
+            }
+            return ret;
+        }
 
         //public static BitArray ByteArrayToBitArray(this byte[] byteArray, int bitCount)
         //{

@@ -30,6 +30,9 @@ namespace Burrows_WhellerTransform
         {
             InitializeComponent();
 
+            //var num = BitConverter.GetBytes(258);
+            //List<byte> trial = new List<byte>(num);
+            //var res = BitConverter.ToInt32(trial.GetRange(0, 4).ToArray(), 0);
 
             openFileDialog1.Filter = "All files(*.*)|*.*";
             SaveFileDialog.Filter = "Text files(*.txt)|*.txt|All files(*.*)|*.*";
@@ -54,6 +57,9 @@ namespace Burrows_WhellerTransform
 
                 List<byte> textAfterBurrowsWheller;
                 FileInfo fileInfo;
+
+
+
 
                 using (fileStream = File.OpenRead(filename))
                 {
@@ -81,7 +87,10 @@ namespace Burrows_WhellerTransform
 
                 //КОДИРОВАНИЕ ТЕКСТА
                 var InformationAboutText = new List<byte>();//вся инфа об кодах Хаффмана для декодера
-                InformationAboutText.Add((byte)AlphabetAndPropabilities.Count);//количество символов в алфавите
+
+                                InformationAboutText.Add((byte)(AlphabetAndPropabilities.Count - 1));//количество символов в алфавите
+                //потому что мы отнимаем 1 при передаче, для того чтобы если алфавит 256, то число уместилось в 1 байт
+
                 InformationAboutText.InsertRange(1, BitConverter.GetBytes(textAfterMoveToFront.Count));//кол-во символов в тексте
 
                 var alphabetLetters = AlphabetAndPropabilities.Select(d => d.Key).ToList();
@@ -139,8 +148,13 @@ namespace Burrows_WhellerTransform
 
                 }
 
-                var alphabetSize = OutputFileList[0];//размер алфавита
-                var userTextLenght = BitConverter.ToInt32(OutputFileList.GetRange(1, 4).ToArray(), 0);//количество букв в тексте
+                int alphabetSize = (int)OutputFileList[0];//размер алфавита
+                alphabetSize += 1;//потому что мы отнимаем 1 при передаче, для того чтобы если алфавит 256, то число уместилось в 1 байт
+                                    var userTextLenght = BitConverter.ToInt32(OutputFileList.GetRange(1, 4).ToArray(), 0);//количество букв в тексте
+
+                var range = OutputFileList.GetRange(1, 4);
+                var range2 = OutputFileList.GetRange(1, 5);
+
                 AlphabetLettersSortedByPropabilities = new List<byte>(OutputFileList.GetRange(5, alphabetSize));//получаем алфавит в упорядоченном виде(по убыв вероятностей)
                 L = new List<byte>(OutputFileList.GetRange((5 + alphabetSize), alphabetSize));//считываем длины код слов
                 var header = alphabetSize * 2 + 5;//размер заголовка

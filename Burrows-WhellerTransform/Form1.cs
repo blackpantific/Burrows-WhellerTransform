@@ -16,8 +16,6 @@ namespace Burrows_WhellerTransform
     {
         public OpenFileDialog openFileDialog1 { get; set; } = new OpenFileDialog();
         public SaveFileDialog SaveFileDialog { get; set; } = new SaveFileDialog();
-        //public static List<byte> Alphabet { get; set; } = new List<byte>();
-        //public static List<double> AlphabetPropabilities { get; set; } = new List<double>();
         public static Dictionary<byte, double> AlphabetAndPropabilities { get; set; } = new Dictionary<byte, double>();
         public static List<byte> AlphabetSorted { get; set; } = new List<byte>();
         public static List<byte> ListToConvertByHuffman { get; set; } = new List<byte>();
@@ -29,10 +27,6 @@ namespace Burrows_WhellerTransform
         public Form1()
         {
             InitializeComponent();
-
-            //var num = BitConverter.GetBytes(258);
-            //List<byte> trial = new List<byte>(num);
-            //var res = BitConverter.ToInt32(trial.GetRange(0, 4).ToArray(), 0);
 
             openFileDialog1.Filter = "All files(*.*)|*.*";
             SaveFileDialog.Filter = "Text files(*.txt)|*.txt|All files(*.*)|*.*";
@@ -179,6 +173,46 @@ namespace Burrows_WhellerTransform
 
         }
 
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == DialogResult.Cancel)
+            {
+                return;
+            }
+            else
+            {
+                string filename = openFileDialog1.FileName;
+                FileStream fileStream;
+                List<byte> OutputFileList;
+                List<double> SortedProp;
+                List<byte> SortedAlphabet;
+
+                using (fileStream = File.OpenRead(filename))
+                {
+                    var fileSize = fileStream.Length;
+                    byte[] buffer = new byte[fileSize];
+
+                    fileStream.Read(buffer, 0, Convert.ToInt32(fileSize));
+                    OutputFileList = new List<byte>(buffer);
+                }
+
+                var dict = GettingAlphabetAndPropabilitiesForEntropy(OutputFileList);
+
+                SortedProp = dict.Select(d => d.Value).ToList();
+                SortedAlphabet = dict.Select(d => d.Key).ToList();
+
+                var res = GettingHXEntropy(SortedProp);
+                this.label1.Text = res.ToString();
+
+                //var propHXX = GettingHXXEntropy(OutputFileList, SortedAlphabet, SortedProp);
+                //this.label2.Text = propHXX.ToString();
+
+                var propHXXX = GettingHXXXPropability(OutputFileList, SortedAlphabet);
+
+            }
+        }
+
+        #region CoderAndDecoder
         public static List<byte> GettingDataFromHuffmanWords(List<byte> byteArray, int numberOfWords)
         {
             List<byte> ListToMoveToFront = new List<byte>();
@@ -566,5 +600,138 @@ namespace Burrows_WhellerTransform
 
         }
 
+        #endregion
+
+        #region Entropies 
+        public static Dictionary<byte, double> GettingAlphabetAndPropabilitiesForEntropy(List<byte> byteArray/*List<byte> Alphabet, List<double> AlphabetPropabilities*/)
+        {
+            var numberOfSymbolsInArray = byteArray.Count;
+            double countSymbols;//сколько раз встречается тот или иной элемент
+            double propability;
+            Dictionary<byte, double> AlphabetAndPropabilitiesEntropy = new Dictionary<byte, double>();
+
+            for (int i = 0; i < numberOfSymbolsInArray; i++)
+            {
+                //string occur = "Test1";
+                //IList<String> words = new List<string>() { "Test1", "Test2", "Test3", "Test1" };
+                if (AlphabetAndPropabilitiesEntropy.ContainsKey(byteArray[i]))
+                {
+                    continue;
+                }
+                else
+                {
+                    countSymbols = byteArray.Where(x => x.Equals(byteArray[i])).Count();
+                    propability = countSymbols / numberOfSymbolsInArray;
+                    AlphabetAndPropabilitiesEntropy.Add(byteArray[i], propability);
+                    //Alphabet.Add(byteArray[i]);
+                    //AlphabetPropabilities.Add(propability);
+                }
+            }
+
+
+             AlphabetAndPropabilitiesEntropy = AlphabetAndPropabilitiesEntropy.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);//сортировка по вероятностям
+
+            return AlphabetAndPropabilitiesEntropy;
+            //var count = AlphabetPropabilities.Sum(x => x);
+
+        }
+
+        public static double GettingHXEntropy(List<double> byteArray)
+        {
+            double res = 0;
+            foreach (var item in byteArray)
+            {
+                res += -1 * item * Math.Log(item, 2);
+            }
+            return res;
+        }
+
+        public static int GettingXXPropability(List<byte> byteArray, byte num1, byte num2)
+        {
+            var res = 0;
+            for (int i = 1; i < byteArray.Count; i++)
+            {
+                if(byteArray[i] == num1 && byteArray[i-1] == num2)
+                {
+                    res += 1;
+                }
+            }
+
+            return res;
+        }
+
+        public static int GettingXXXPropability(List<byte> byteArray, byte num1, byte num2, byte num3)
+        {
+            var res = 0;
+            for (int i = 2; i < byteArray.Count; i++)
+            {
+                if (byteArray[i] == num1 && byteArray[i - 1] == num2 && byteArray[i - 2] == num3)
+                {
+                    res += 1;
+                }
+            }
+
+            return res;
+        }
+
+        public static double GettingHXXEntropy(List<byte> byteArray, List<byte> AlphabetArray, List<double> alphabetProp)
+        {
+            var res = 0.0;
+            for (int i = 0; i < AlphabetArray.Count; i++)
+            {
+                var sumOfI = byteArray.Where(x => x.Equals(AlphabetArray[i])).Count();
+                for (int j = 0; j < AlphabetArray.Count; j++)
+                {
+                    var counter = GettingXXPropability(byteArray, AlphabetArray[j], AlphabetArray[i]);
+                    var hx = 0.0;
+                    if(counter == 0)
+                    {
+                        hx = 0.0;
+                    }
+                    else
+                    {
+                        var divRes = (double)counter / (double)sumOfI;
+                        hx = -1 * divRes * Math.Log(divRes, 2) * alphabetProp[i];
+                        res += hx;
+                    }
+                }
+            }
+
+
+            return res;
+        }
+
+        public static double GettingHXXXPropability(List<byte> byteArray, List<byte> AlphabetArray)
+        {
+            var res = 0.0;
+            for (int i = 0; i < AlphabetArray.Count; i++)
+            {
+                var sumOfI = byteArray.Where(x => x.Equals(AlphabetArray[i])).Count();
+                for (int j = 0; j < AlphabetArray.Count; j++)
+                {
+                    var counterXX = GettingXXPropability(byteArray, AlphabetArray[j], AlphabetArray[i]);//количество комбинаций XX
+                    if (counterXX == 0)
+                        continue;
+
+                    var propXX = (double)counterXX / (double)sumOfI;//Вероятность XX
+                    for (int m = 0; m < AlphabetArray.Count; m++)
+                    {
+                        var counter = GettingXXXPropability(byteArray, AlphabetArray[m], AlphabetArray[j], AlphabetArray[i]);
+                        var hx = 0.0;
+                        if (counter == 0)
+                            continue;
+                        
+                            var divRes = (double)counter / (double)counterXX;//Вероятность X|XX
+                            hx = -1 * divRes * Math.Log(divRes, 2) * propXX;
+                            res += hx;
+                        
+                    }
+                }
+            }
+
+
+            return res;
+        }
+        #endregion
     }
 }

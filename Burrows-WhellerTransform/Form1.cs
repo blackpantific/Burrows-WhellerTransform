@@ -14,6 +14,9 @@ namespace Burrows_WhellerTransform
 {
     public partial class Form1 : Form
     {
+        private static Dictionary<(byte, byte),int>  XXCache = new Dictionary<(byte, byte), int>();
+        private static Dictionary<int, int> SumOfICache = new Dictionary<int, int>();
+
         public OpenFileDialog openFileDialog1 { get; set; } = new OpenFileDialog();
         public SaveFileDialog SaveFileDialog { get; set; } = new SaveFileDialog();
         public static Dictionary<byte, double> AlphabetAndPropabilities { get; set; } = new Dictionary<byte, double>();
@@ -74,15 +77,11 @@ namespace Burrows_WhellerTransform
 
                 HuffmanCodeBuilder(SortedPropabilities);//передаем список сортированых вероятностей из словаря
 
-                //ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО ВАЖНО!!!
-
-                //Есть предположение, что объединение минимальных вероятностей при построении слов должно происходить с конца матрицы
-                //независимо от того сколько одинаковых минимальных вероятностей будет всего
 
                 //КОДИРОВАНИЕ ТЕКСТА
-                var InformationAboutText = new List<byte>();//вся инфа об кодах Хаффмана для декодера
+                var InformationAboutText = new List<byte>();//вся инфа о кодах Хаффмана для декодера
 
-                                InformationAboutText.Add((byte)(AlphabetAndPropabilities.Count - 1));//количество символов в алфавите
+                InformationAboutText.Add((byte)(AlphabetAndPropabilities.Count - 1));//количество символов в алфавите
                 //потому что мы отнимаем 1 при передаче, для того чтобы если алфавит 256, то число уместилось в 1 байт
 
                 InformationAboutText.InsertRange(1, BitConverter.GetBytes(textAfterMoveToFront.Count));//кол-во символов в тексте
@@ -98,13 +97,13 @@ namespace Burrows_WhellerTransform
                     ListOfAllHuffmanWords.AddRange(C[i]);
                 }
 
-                var codeText = HuffmanTextCoder(textAfterMoveToFront);//
+                var codeText = HuffmanTextCoder(textAfterMoveToFront);
 
                 ListOfAllHuffmanWords.AddRange(codeText);//склеиваем кодовые слова и текст из кодовых слов
 
                 var wordsArrayAfterConvertion = ListOfAllHuffmanWords.ToBitArray(ListOfAllHuffmanWords.Count);
                 var byteArrayWords = wordsArrayAfterConvertion.BitArrayToByteArray();//переработанный массив из слов алфавита и текста
-                                                                                     //var listArrayOfDecodedArray = byteArrayWords.ByteArrayToBitList();
+                                                                                     
 
                 InformationAboutText.AddRange(byteArrayWords);//полный текст на запись в файл
 
@@ -124,7 +123,7 @@ namespace Burrows_WhellerTransform
             }
             else
             {
-                List<byte> OutputFileList = new List<byte>();//текст из сжатого файла
+                var OutputFileList = new List<byte>();//текст из сжатого файла
                 string filename = openFileDialog1.FileName;
                 FileStream fileStream;
                 List<byte> HuffmanWordsWithData;
@@ -144,7 +143,7 @@ namespace Burrows_WhellerTransform
 
                 int alphabetSize = (int)OutputFileList[0];//размер алфавита
                 alphabetSize += 1;//потому что мы отнимаем 1 при передаче, для того чтобы если алфавит 256, то число уместилось в 1 байт
-                                    var userTextLenght = BitConverter.ToInt32(OutputFileList.GetRange(1, 4).ToArray(), 0);//количество букв в тексте
+                var userTextLenght = BitConverter.ToInt32(OutputFileList.GetRange(1, 4).ToArray(), 0);//количество букв в тексте
 
                 var range = OutputFileList.GetRange(1, 4);
                 var range2 = OutputFileList.GetRange(1, 5);
@@ -204,11 +203,11 @@ namespace Burrows_WhellerTransform
                 var res = GettingHXEntropy(SortedProp);
                 this.label1.Text = res.ToString();
 
-                //var propHXX = GettingHXXEntropy(OutputFileList, SortedAlphabet, SortedProp);
-                //this.label2.Text = propHXX.ToString();
+                var propHXX = GettingHXXEntropy(OutputFileList, SortedAlphabet, SortedProp);
+                this.label2.Text = propHXX.ToString();
 
-                var propHXXX = GettingHXXXPropability(OutputFileList, SortedAlphabet);
-
+                var propHXXX = GettingHXXXPropability(OutputFileList, SortedAlphabet, SortedProp);
+                this.label3.Text = propHXXX.ToString();
             }
         }
 
@@ -265,7 +264,6 @@ namespace Burrows_WhellerTransform
             List<byte> outputList = new List<byte>();
             for (int i = 0; i < byteArray.Count; i++)
             {
-                //outputList.AddRange(C[SortedPropabilities.IndexOf(AlphabetAndPropabilities[byteArray[i]])]);
                 var c = AlphabetLettersSortedByPropabilities.IndexOf(byteArray[i]);
                 var d = C[c];
                 outputList.AddRange(d);
@@ -280,11 +278,9 @@ namespace Burrows_WhellerTransform
             var numerator = 0;
             var fileSize = fileStream.Length;
             byte[] buffer = new byte[fileSize];
-            List<byte> DataToBurrowsWhellerCompress = new List<byte>();//??
+            var DataToBurrowsWhellerCompress = new List<byte>();
             List<byte> BufferAsList;
             uint numberOfBlocks = 0;
-
-            /////////////////СОЗДАТЬ АЛФАВИТ ДЛЯ КОДА ХАФФМАНА
 
             fileStream.Read(buffer, 0, Convert.ToInt32(fileSize));
             BufferAsList = new List<byte>(buffer);
@@ -295,9 +291,6 @@ namespace Burrows_WhellerTransform
                 {
                     var sublist = BufferAsList.GetRange(numerator, blockSize);
                     DataToBurrowsWhellerCompress.AddRange(BurrowsWhellerCompressDataBlock(sublist));
-
-                    //var a = BurrowsWhellerDecompressDataBlock(BurrowsWhellerCompressDataBlock(sublist));
-
                     numerator += blockSize;
                     numberOfBlocks += 1;//кол-во блоков до 4294967295, 4 байта
                 }
@@ -307,9 +300,6 @@ namespace Burrows_WhellerTransform
                     if (sublist.Count != 0)
                     {
                         DataToBurrowsWhellerCompress.AddRange(BurrowsWhellerCompressDataBlock(sublist));
-
-                        //var a = BurrowsWhellerDecompressDataBlock(BurrowsWhellerCompressDataBlock(sublist));
-
                         numberOfBlocks += 1;
                     }
                     break;
@@ -465,11 +455,6 @@ namespace Burrows_WhellerTransform
             List<byte> Alphabet = new List<byte>();
 
             Alphabet.AddRange(byteArray.GetRange(4, numberOfSymbolsAlphabet));
-
-            //for (int i = 4; i < numberOfSymbolsAlphabet + 4; i++)//заменить на GetRange
-            //{
-            //    Alphabet.Add(byteArray[i]);
-            //}
             byteArray.RemoveRange(0, 4 + Alphabet.Count);
 
             for (int i = 0; i < byteArray.Count; i++)//цикл по входному списку
@@ -576,8 +561,6 @@ namespace Burrows_WhellerTransform
             double propability;
             for (int i = 0; i < numberOfSymbolsInArray; i++)
             {
-                //string occur = "Test1";
-                //IList<String> words = new List<string>() { "Test1", "Test2", "Test3", "Test1" };
                 if (AlphabetAndPropabilities.ContainsKey(byteArray[i]))
                 {
                     continue;
@@ -587,16 +570,11 @@ namespace Burrows_WhellerTransform
                     countSymbols = byteArray.Where(x => x.Equals(byteArray[i])).Count();
                     propability = countSymbols / numberOfSymbolsInArray;
                     AlphabetAndPropabilities.Add(byteArray[i], propability);
-                    //Alphabet.Add(byteArray[i]);
-                    //AlphabetPropabilities.Add(propability);
                 }
             }
 
 
             AlphabetAndPropabilities = AlphabetAndPropabilities.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);//сортировка по вероятностям
-
-
-            //var count = AlphabetPropabilities.Sum(x => x);
 
         }
 
@@ -646,8 +624,26 @@ namespace Burrows_WhellerTransform
             return res;
         }
 
+        private static int SumOfI(List<byte> byteArray, List<byte> AlphabetArray, int i)
+        {
+            if (SumOfICache.ContainsKey(i))
+            {
+                return SumOfICache[i];
+            }
+
+            SumOfICache[i] = byteArray.Where(x => x.Equals(AlphabetArray[i])).Count();
+            return SumOfICache[i];
+        }
+
+      
+
         public static int GettingXXPropability(List<byte> byteArray, byte num1, byte num2)
         {
+            if (XXCache.ContainsKey((num1, num2)))
+            {
+                return XXCache[(num1, num2)];
+            }
+
             var res = 0;
             for (int i = 1; i < byteArray.Count; i++)
             {
@@ -656,6 +652,8 @@ namespace Burrows_WhellerTransform
                     res += 1;
                 }
             }
+
+            XXCache[(num1, num2)] = res;
 
             return res;
         }
@@ -679,21 +677,18 @@ namespace Burrows_WhellerTransform
             var res = 0.0;
             for (int i = 0; i < AlphabetArray.Count; i++)
             {
-                var sumOfI = byteArray.Where(x => x.Equals(AlphabetArray[i])).Count();
+                int sumOfI = SumOfI(byteArray, AlphabetArray, i);
                 for (int j = 0; j < AlphabetArray.Count; j++)
                 {
                     var counter = GettingXXPropability(byteArray, AlphabetArray[j], AlphabetArray[i]);
                     var hx = 0.0;
-                    if(counter == 0)
-                    {
-                        hx = 0.0;
-                    }
-                    else
-                    {
+                    if (counter == 0)
+                        continue;
+                   
                         var divRes = (double)counter / (double)sumOfI;
                         hx = -1 * divRes * Math.Log(divRes, 2) * alphabetProp[i];
                         res += hx;
-                    }
+                    
                 }
             }
 
@@ -701,15 +696,16 @@ namespace Burrows_WhellerTransform
             return res;
         }
 
-        public static double GettingHXXXPropability(List<byte> byteArray, List<byte> AlphabetArray)
+        public static double GettingHXXXPropability(List<byte> byteArray, List<byte> AlphabetArray, List<double> alphabetProp)
         {
             var res = 0.0;
             for (int i = 0; i < AlphabetArray.Count; i++)
             {
-                var sumOfI = byteArray.Where(x => x.Equals(AlphabetArray[i])).Count();
+                int sumOfI = SumOfI(byteArray, AlphabetArray, i);
                 for (int j = 0; j < AlphabetArray.Count; j++)
                 {
                     var counterXX = GettingXXPropability(byteArray, AlphabetArray[j], AlphabetArray[i]);//количество комбинаций XX
+                    //сколько раз XX встречается в тексте
                     if (counterXX == 0)
                         continue;
 
@@ -717,12 +713,13 @@ namespace Burrows_WhellerTransform
                     for (int m = 0; m < AlphabetArray.Count; m++)
                     {
                         var counter = GettingXXXPropability(byteArray, AlphabetArray[m], AlphabetArray[j], AlphabetArray[i]);
+                        //сколько раз XXX встреч в тексте
                         var hx = 0.0;
                         if (counter == 0)
                             continue;
                         
                             var divRes = (double)counter / (double)counterXX;//Вероятность X|XX
-                            hx = -1 * divRes * Math.Log(divRes, 2) * propXX;
+                            hx = -1 * divRes * Math.Log(divRes, 2) * propXX * alphabetProp[i];
                             res += hx;
                         
                     }

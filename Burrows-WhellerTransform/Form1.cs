@@ -361,16 +361,22 @@ namespace Burrows_WhellerTransform
             while (endBuilding)
             {
 
-
-
-                p_iValue = P.Where(func).Min();
-                p_iPosition = P.IndexOf(p_iValue);
+                var list = P.ToList();
+                list.Reverse();
+                p_iValue = list.Where(func).Min();
+                p_iPosition = sortedProbabilities.Count - list.IndexOf(list.Where(func).Min()) - 1;
+                list[list.IndexOf(list.Where(func).Min())] = 0;
+                //p_iValue = P.Where(func).Min();
+                //p_iPosition = P.IndexOf(p_iValue);
                 P[p_iPosition] = 0;
 
                 try
                 {
-                    p_jValue = P.Where(func).Min();
-                    p_jPosition = P.IndexOf(p_jValue);
+                    p_jValue = list.Where(func).Min();
+                    p_jPosition = sortedProbabilities.Count - list.IndexOf(p_jValue) - 1;
+                    list[list.IndexOf(p_jValue)] = 0;
+                    //p_jValue = P.Where(func).Min();
+                    //p_jPosition = P.IndexOf(p_jValue);
                     P[p_jPosition] = 0;
                 }
                 catch                //мы закончили создание код слов, так как остался 1 элемент и все отортированы
@@ -634,8 +640,6 @@ namespace Burrows_WhellerTransform
             SumOfICache[i] = byteArray.Where(x => x.Equals(AlphabetArray[i])).Count();
             return SumOfICache[i];
         }
-
-      
 
         public static int GettingXXPropability(List<byte> byteArray, byte num1, byte num2)
         {
